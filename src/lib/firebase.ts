@@ -13,14 +13,12 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 
-// Initialize Firebase only if all required keys are provided and are not empty strings.
 if (firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId) {
     try {
         app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         auth = getAuth(app);
     } catch (error) {
         console.error("Firebase initialization error:", error);
-        // Set auth to null if initialization fails, so the app can handle it gracefully.
         auth = null; 
     }
 } else {

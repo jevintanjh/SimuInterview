@@ -52,77 +52,41 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...`}
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isConfigValid, setIsConfigValid] = useState(true);
+  const isConfigValid = !!auth;
 
   useEffect(() => {
-    if (!auth) {
-      setIsConfigValid(false);
-      setLoading(false);
-      return;
+    if (!isConfigValid) {
+        setLoading(false);
+        return;
     }
 
-    try {
-      const unsubscribe = onAuthStateChanged(auth,
-        (user) => {
-          // Success
-          setUser(user);
-          setIsConfigValid(true);
-          setLoading(false);
-        },
-        (error) => {
-          // Failure on async check
-          console.error("Firebase Auth Error (async):", error);
-          setIsConfigValid(false);
-          setLoading(false);
-        }
-      );
-      return () => unsubscribe();
-    } catch (error) {
-      // Failure on sync setup
-      console.error("Firebase Auth Error (sync):", error);
-      setIsConfigValid(false);
-      setLoading(false);
-    }
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [isConfigValid]);
 
   const signInWithGoogle = async () => {
     if (!auth) throw new Error("Firebase not configured.");
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google", error);
-      throw error;
-    }
+    await signInWithPopup(auth, provider);
   };
   
   const signInWithEmail = async (email: string, password: string) => {
     if (!auth) throw new Error("Firebase not configured.");
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-        console.error("Error signing in with email", error.code);
-        throw new Error(error.code || 'An unknown error occurred during sign-in.');
-    }
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!auth) throw new Error("Firebase not configured.");
-    try {
-        await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-        console.error("Error signing up with email", error.code);
-        throw new Error(error.code || 'An unknown error occurred during sign-up.');
-    }
+    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signOut = async () => {
     if (!auth) return;
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error signing out", error);
-    }
+    await firebaseSignOut(auth);
   };
 
   if (!isConfigValid) {

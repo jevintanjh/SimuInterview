@@ -10,7 +10,6 @@ export const getUsageCount = (userId: string): number => {
   try {
     const item = window.localStorage.getItem(`${USAGE_STORAGE_PREFIX}${userId}`);
     if (item === null) {
-      // Set initial count for new users
       window.localStorage.setItem(`${USAGE_STORAGE_PREFIX}${userId}`, String(MAX_FREE_TRIES));
       return MAX_FREE_TRIES;
     }
@@ -34,7 +33,6 @@ export const decrementUsageCount = (userId: string): number => {
   }
 };
 
-// This would be called by a Stripe webhook in a real app
 export const addTries = (userId: string, amount: number) => {
     if (typeof window === 'undefined') return;
     try {

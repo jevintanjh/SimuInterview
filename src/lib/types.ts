@@ -1,4 +1,4 @@
-import type { analyzeInterviewResponse } from "@/app/actions";
+import type { AnalyzeInterviewResponseOutput } from "@/ai/flows/analyze-interview-response";
 
 export type QAPair = {
     question: string;
@@ -10,4 +10,4 @@ export type InterviewData = {
     scenario: Record<string, string>;
 }
 
-export type CompetencyAssessment = Awaited<ReturnType<typeof analyzeInterviewResponse>>
+export type CompetencyAssessment = AnalyzeInterviewResponseOutput;

@@ -77,14 +77,12 @@ export function LoginCard() {
             }
         } catch (err: any) {
             let friendlyMessage = 'An error occurred. Please try again.';
-            const errorCode = err.message || '';
+            const errorCode = err.code || '';
 
-            if (errorCode.includes('auth/invalid-credential')) {
+            if (errorCode.includes('auth/invalid-credential') || errorCode.includes('auth/user-not-found') || errorCode.includes('auth/wrong-password')) {
                 friendlyMessage = 'Invalid credentials. Please check your email and password.';
             } else if (errorCode.includes('auth/email-already-in-use')) {
-                friendlyMessage = 'This email is already registered.';
-            } else if (errorCode.includes('auth/api-key-not-valid')) {
-                friendlyMessage = 'Firebase API Key is invalid. Please check your project setup.';
+                friendlyMessage = 'This email is already registered. Please sign in.';
             } else if (errorCode.includes('auth/invalid-email')) {
                 friendlyMessage = 'Please enter a valid email address.';
             }
@@ -168,7 +166,7 @@ export function LoginCard() {
                         </div>
 
                          {error && (
-                            <p className="text-sm text-destructive">{error}</p>
+                            <p className="text-sm text-destructive text-center">{error}</p>
                         )}
 
                         <div className="flex gap-2">
