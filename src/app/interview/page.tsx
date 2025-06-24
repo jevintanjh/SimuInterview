@@ -21,7 +21,7 @@ function InterviewPageComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   const [scenario, setScenario] = useState<Record<string, string>>({});
   const [transcript, setTranscript] = useState<{ speaker: 'interviewer' | 'user'; text: string }[]>([]);
@@ -147,15 +147,18 @@ function InterviewPageComponent() {
 
 
   const handleScrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
-      viewport?.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-    }, 100);
+    if (scrollViewportRef.current) {
+        const viewport = scrollViewportRef.current;
+        setTimeout(() => {
+            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }, 100);
+    }
   }, []);
 
   useEffect(() => {
     handleScrollToBottom();
-  }, [transcript, handleScrollToBottom]);
+  }, [transcript, feedback, handleScrollToBottom]);
+
 
   const processUserResponse = useCallback(async (response: string) => {
     setIsProcessingResponse(true);
@@ -269,7 +272,7 @@ function InterviewPageComponent() {
           <Card>
             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={`https://placehold.co/128x128.png`} data-ai-hint="professional portrait" />
+                <AvatarImage src={'https://placehold.co/128x128.png'} data-ai-hint="professional portrait" />
                 <AvatarFallback>AI</AvatarFallback>
               </Avatar>
               <div>
@@ -326,7 +329,7 @@ function InterviewPageComponent() {
               <CardTitle>Interview Simulation</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 min-h-0">
-              <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
+              <ScrollArea className="flex-1 pr-4 -mr-4" viewportRef={scrollViewportRef}>
                 <div className="space-y-4">
                   {transcript.map((item, index) => (
                     <div key={index} className={`flex items-start gap-3 ${item.speaker === 'user' ? 'justify-end' : ''}`}>
