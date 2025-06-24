@@ -3,6 +3,8 @@
 import { provideRealTimeFeedback as provideRealTimeFeedbackFlow, ProvideRealTimeFeedbackInput } from '@/ai/flows/provide-real-time-feedback';
 import { analyzeInterviewResponse as analyzeInterviewResponseFlow, AnalyzeInterviewResponseInput } from '@/ai/flows/analyze-interview-response';
 import { generateInterviewerPersona as generateInterviewerPersonaFlow, GenerateInterviewerPersonaInput } from '@/ai/flows/generate-interviewer-persona';
+import { speechToText as speechToTextFlow, SpeechToTextInput } from '@/ai/flows/speech-to-text';
+import { textToSpeech as textToSpeechFlow, TextToSpeechInput } from '@/ai/flows/text-to-speech';
 
 export async function provideRealTimeFeedback(input: ProvideRealTimeFeedbackInput) {
     try {
@@ -19,4 +21,12 @@ export async function analyzeInterviewResponse(input: AnalyzeInterviewResponseIn
 
 export async function generateInterviewerPersona(input: GenerateInterviewerPersonaInput) {
     return await generateInterviewerPersonaFlow(input);
+}
+
+export async function speechToText(input: SpeechToTextInput) {
+    return await speechToTextFlow(input);
+}
+
+export async function textToSpeech(input: TextToSpeechInput) {
+    return await textToSpeechFlow(input);
 }

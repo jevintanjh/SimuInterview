@@ -2,17 +2,16 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { provideRealTimeFeedback } from '@/app/actions';
+import { provideRealTimeFeedback, speechToText, textToSpeech } from '@/app/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import { type QAPair } from '@/lib/types';
-import { Bot, ChevronLeft, Lightbulb, Loader2, Send, User } from 'lucide-react';
+import { Bot, ChevronLeft, Lightbulb, Loader2, Mic, MicOff, User } from 'lucide-react';
 
 function InterviewPageComponent() {
   const router = useRouter();
@@ -24,10 +23,45 @@ function InterviewPageComponent() {
   const [transcript, setTranscript] = useState<{ speaker: 'interviewer' | 'user'; text: string }[]>([]);
   const [qaPairs, setQaPairs] = useState<QAPair[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userResponse, setUserResponse] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  const [interviewerAudioUrl, setInterviewerAudioUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioPermissionGranted, setAudioPermissionGranted] = useState<boolean | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const getInterviewerAudio = useCallback(async (text: string) => {
+    setIsGeneratingAudio(true);
+    setInterviewerAudioUrl(null);
+    try {
+      const { audioDataUri } = await textToSpeech(text);
+      setInterviewerAudioUrl(audioDataUri);
+    } catch (error) {
+      console.error("Error generating audio:", error);
+      toast({ title: "Audio Generation Failed", variant: "destructive" });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => setAudioPermissionGranted(true))
+      .catch(() => {
+        setAudioPermissionGranted(false);
+        toast({
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access in your browser settings to proceed.",
+          variant: "destructive",
+        });
+      });
+  }, [toast]);
   
   useEffect(() => {
     const newScenario: Record<string, string> = {};
@@ -48,17 +82,25 @@ function InterviewPageComponent() {
     const firstQuestion = INTERVIEW_QUESTIONS[0];
     setTranscript([{ speaker: 'interviewer', text: firstQuestion }]);
     setQaPairs([{ question: firstQuestion, answer: '' }]);
+    getInterviewerAudio(firstQuestion);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router, toast]);
+
+  useEffect(() => {
+    if (interviewerAudioUrl && audioRef.current) {
+        audioRef.current.play().catch(e => console.error("Audio autoplay failed:", e));
+    }
+  }, [interviewerAudioUrl]);
 
   const handleScrollToBottom = useCallback(() => {
     setTimeout(() => {
-        if (scrollAreaRef.current) {
-            const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-            if (viewport) {
-                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-            }
+      if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
         }
+      }
     }, 100);
   }, []);
 
@@ -66,29 +108,78 @@ function InterviewPageComponent() {
     handleScrollToBottom();
   }, [transcript, handleScrollToBottom]);
 
-  const handleSubmitResponse = async () => {
-    if (!userResponse.trim() || isFeedbackLoading) return;
-    
-    setTranscript(prev => [...prev, { speaker: 'user', text: userResponse }]);
-    
-    const currentQaPair = qaPairs[currentQuestionIndex];
-    const updatedQaPairs = [...qaPairs];
-    updatedQaPairs[currentQuestionIndex] = { ...currentQaPair, answer: userResponse };
-    setQaPairs(updatedQaPairs);
-
-    setIsFeedbackLoading(true);
+  const handleTranscription = async (audioDataUri: string) => {
+    setIsTranscribing(true);
     setFeedback(null);
-    setUserResponse('');
+    try {
+        const { transcription } = await speechToText({ audioDataUri });
+        if (!transcription.trim()) {
+            toast({ title: "Couldn't hear you", description: "Could you please try again?", variant: "destructive" });
+            setIsTranscribing(false);
+            return;
+        }
 
-    const feedbackResult = await provideRealTimeFeedback({
-      intervieweeResponse: userResponse,
-      interviewerQuestion: currentQaPair.question,
-      jobDescription: `Role: ${scenario.role}, Company: ${scenario.company}, Industry: ${scenario.industry}`,
-      interviewerPersona: scenario.persona,
-    });
-    
-    setFeedback(feedbackResult.feedback);
-    setIsFeedbackLoading(false);
+        setTranscript(prev => [...prev, { speaker: 'user', text: transcription }]);
+        
+        const currentQaPair = qaPairs[currentQuestionIndex];
+        const updatedQaPairs = [...qaPairs];
+        updatedQaPairs[currentQuestionIndex] = { ...currentQaPair, answer: transcription };
+        setQaPairs(updatedQaPairs);
+
+        const feedbackResult = await provideRealTimeFeedback({
+            intervieweeResponse: transcription,
+            interviewerQuestion: currentQaPair.question,
+            jobDescription: `Role: ${scenario.role}, Company: ${scenario.company}, Industry: ${scenario.industry}`,
+            interviewerPersona: scenario.persona,
+        });
+        setFeedback(feedbackResult.feedback);
+
+    } catch (error) {
+        console.error("Error transcribing audio:", error);
+        toast({ title: "Transcription Failed", description: "Please try recording your answer again.", variant: "destructive" });
+    } finally {
+        setIsTranscribing(false);
+    }
+  };
+
+  const startRecording = async () => {
+    if (!audioPermissionGranted) {
+        toast({ title: "Microphone access is required.", variant: 'destructive' });
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+                const base64data = reader.result as string;
+                handleTranscription(base64data);
+            };
+            stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+    } catch (err) {
+        console.error("Error starting recording:", err);
+        toast({ title: "Could not start recording.", variant: "destructive" });
+    }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && isRecording) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+      }
   };
 
   const handleNextQuestion = () => {
@@ -99,6 +190,7 @@ function InterviewPageComponent() {
       setTranscript(prev => [...prev, { speaker: 'interviewer', text: nextQuestion }]);
       setQaPairs(prev => [...prev, { question: nextQuestion, answer: '' }]);
       setFeedback(null);
+      getInterviewerAudio(nextQuestion);
     } else {
       handleFinishInterview();
     }
@@ -135,6 +227,7 @@ function InterviewPageComponent() {
 
   const isLastQuestion = currentQuestionIndex === INTERVIEW_QUESTIONS.length - 1;
   const isCurrentQuestionAnswered = qaPairs[currentQuestionIndex]?.answer.trim() !== '';
+  const isProcessing = isTranscribing || isGeneratingAudio;
 
   return (
     <div className="container mx-auto p-4 min-h-screen flex flex-col gap-4">
@@ -147,7 +240,7 @@ function InterviewPageComponent() {
             <h1 className="text-2xl font-bold font-headline">SimuInterview</h1>
             <p className="text-sm text-muted-foreground">{scenario.role} at {scenario.company}</p>
         </div>
-        <Button onClick={handleFinishInterview} disabled={isFinishing}>
+        <Button onClick={handleFinishInterview} disabled={isFinishing || isProcessing}>
           {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Finish & Assess
         </Button>
@@ -174,10 +267,10 @@ function InterviewPageComponent() {
               <CardDescription>Get instant tips on your answers.</CardDescription>
             </CardHeader>
             <CardContent>
-              {isFeedbackLoading && <Skeleton className="h-24 w-full" />}
+              {isTranscribing && <Skeleton className="h-24 w-full" />}
               {feedback && <p className="text-sm text-foreground bg-primary/10 p-3 rounded-md">{feedback}</p>}
-              {!isFeedbackLoading && !feedback && isCurrentQuestionAnswered && <p className="text-sm text-muted-foreground">Feedback will appear here.</p>}
-              {!isCurrentQuestionAnswered && <p className="text-sm text-muted-foreground">Answer the question to receive feedback.</p>}
+              {!isTranscribing && !feedback && isCurrentQuestionAnswered && <p className="text-sm text-muted-foreground">Feedback will appear here.</p>}
+              {!isCurrentQuestionAnswered && <p className="text-sm text-muted-foreground">Record your answer to get feedback.</p>}
             </CardContent>
           </Card>
         </aside>
@@ -209,24 +302,30 @@ function InterviewPageComponent() {
                 </div>
               </ScrollArea>
               <div className="flex flex-col gap-2">
-                 <div className="flex items-center gap-2">
-                    <Textarea
-                      placeholder="Type your answer here..."
-                      value={userResponse}
-                      onChange={(e) => setUserResponse(e.target.value)}
-                      onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitResponse(); } }}
-                      disabled={isCurrentQuestionAnswered}
-                      rows={3}
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSubmitResponse} disabled={userResponse.trim() === '' || isCurrentQuestionAnswered || isFeedbackLoading} size="icon">
-                      <Send className="h-4 w-4" />
-                    </Button>
+                 {interviewerAudioUrl && <audio ref={audioRef} src={interviewerAudioUrl} className="hidden" />}
+
+                 <div className="flex justify-center items-center gap-4 py-4 border-t">
+                    {isRecording ? (
+                        <Button onClick={stopRecording} variant="destructive" size="lg" className="rounded-full w-20 h-20">
+                            <MicOff className="h-8 w-8" />
+                            <span className="sr-only">Stop Recording</span>
+                        </Button>
+                    ) : (
+                        <Button onClick={startRecording} size="lg" className="rounded-full w-20 h-20" disabled={audioPermissionGranted === false || isCurrentQuestionAnswered || isProcessing}>
+                            {isProcessing ? (
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                            ) : (
+                                <Mic className="h-8 w-8" />
+                            )}
+                            <span className="sr-only">Start Recording</span>
+                        </Button>
+                    )}
                 </div>
+                
                 {isCurrentQuestionAnswered && (
-                  <Button onClick={handleNextQuestion} disabled={isFeedbackLoading}>
-                    {isFeedbackLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    {isFeedbackLoading ? 'Analyzing...' : (isLastQuestion ? 'Finish' : 'Next Question')}
+                  <Button onClick={handleNextQuestion} disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isProcessing ? 'Processing...' : (isLastQuestion ? 'Finish' : 'Next Question')}
                   </Button>
                 )}
               </div>
