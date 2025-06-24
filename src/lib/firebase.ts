@@ -13,16 +13,19 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 
+// This check prevents Firebase from trying to initialize with missing keys.
 if (firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId) {
     try {
+        // Initialize Firebase only if it hasn't been initialized yet.
         app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         auth = getAuth(app);
     } catch (error) {
         console.error("Firebase initialization error:", error);
+        // If initialization fails, ensure auth remains null.
         auth = null; 
     }
 } else {
-    console.warn("Firebase config is missing or incomplete. Auth will be disabled.");
+    console.warn("Firebase config is missing or incomplete. Auth features will be disabled.");
 }
 
 export { app, auth };

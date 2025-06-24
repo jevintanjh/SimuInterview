@@ -18,10 +18,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// A component to show when Firebase config is invalid.
 function FirebaseConfigNotice() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-background">
-            <Card className="w-full max-w-lg">
+            <Card className="w-full max-w-lg shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -33,7 +34,7 @@ function FirebaseConfigNotice() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">
-                        You can get these keys from your Firebase project settings. Copy the following into your <code>.env</code> file and fill in the values:
+                        You can get these keys from your Firebase project settings. Copy the following into your <code>.env</code> file at the root of your project and fill in the values:
                     </p>
                     <pre className="p-4 bg-muted rounded-md text-xs overflow-x-auto">
 {`NEXT_PUBLIC_FIREBASE_API_KEY=...
@@ -43,6 +44,9 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...`}
                     </pre>
+                     <p className="text-sm text-muted-foreground mt-4">
+                        After updating your <code>.env</code> file, please restart the development server.
+                    </p>
                 </CardContent>
             </Card>
         </div>
@@ -52,9 +56,12 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...`}
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // This boolean now safely checks if Firebase was initialized correctly.
   const isConfigValid = !!auth;
 
   useEffect(() => {
+    // If config is not valid, don't attempt to set up the listener.
     if (!isConfigValid) {
         setLoading(false);
         return;
@@ -63,24 +70,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         setUser(user);
         setLoading(false);
+    }, (error) => {
+        // Handle potential errors during listener setup
+        console.error("Auth state listener error:", error);
+        setLoading(false);
     });
 
     return () => unsubscribe();
   }, [isConfigValid]);
 
   const signInWithGoogle = async () => {
-    if (!auth) throw new Error("Firebase not configured.");
+    if (!auth) throw new Error("Firebase is not configured.");
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   };
   
   const signInWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase not configured.");
+    if (!auth) throw new Error("Firebase is not configured.");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase not configured.");
+    if (!auth) throw new Error("Firebase is not configured.");
     await createUserWithEmailAndPassword(auth, email, password);
   };
 
@@ -89,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await firebaseSignOut(auth);
   };
 
+  // If Firebase config is invalid, show the notice instead of crashing.
   if (!isConfigValid) {
     return <FirebaseConfigNotice />;
   }
