@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to convert text to speech.
@@ -18,6 +19,9 @@ const TextToSpeechOutputSchema = z.object({
   audioDataUri: z.string().describe("The generated audio as a data URI."),
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
+
+// Simple in-memory cache to store generated audio
+const ttsCache = new Map<string, TextToSpeechOutput>();
 
 export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
@@ -57,6 +61,11 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async (query) => {
+    // Check cache first to avoid unnecessary API calls
+    if (ttsCache.has(query)) {
+      return ttsCache.get(query)!;
+    }
+
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
@@ -76,8 +85,14 @@ const textToSpeechFlow = ai.defineFlow(
       media.url.substring(media.url.indexOf(',') + 1),
       'base64'
     );
-    return {
+    
+    const result = {
       audioDataUri: 'data:audio/wav;base64,' + (await toWav(audioBuffer)),
     };
+
+    // Store the newly generated audio in the cache
+    ttsCache.set(query, result);
+
+    return result;
   }
 );
