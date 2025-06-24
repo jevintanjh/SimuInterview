@@ -39,7 +39,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   }
 
 export function LoginCard() {
-    const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+    const { signInWithGoogle, signInWithEmail, signUpWithEmail, user } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -76,19 +76,19 @@ export function LoginCard() {
                 await signUpWithEmail(email, password);
             }
         } catch (err: any) {
-            const friendlyMessage = err.code?.includes('auth/invalid-credential') 
+            const errorMessage = err.message || '';
+            const friendlyMessage = errorMessage.includes('auth/invalid-credential') 
                 ? 'Invalid credentials. Please check your email and password.'
-                : err.code?.includes('auth/email-already-in-use')
+                : errorMessage.includes('auth/email-already-in-use')
                 ? 'This email is already registered.'
+                : errorMessage.includes('auth/api-key-not-valid')
+                ? 'Firebase API Key is invalid. Please check your setup.'
                 : 'An error occurred. Please try again.';
             setError(friendlyMessage);
         } finally {
             setLoading(null);
         }
     };
-
-    const { user } = useAuth();
-
 
     return (
         <div className="flex flex-col md:flex-row items-center justify-center gap-12 p-4">

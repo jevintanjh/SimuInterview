@@ -100,9 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error("Firebase not configured.");
     try {
         await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error signing in with email", error);
-        throw error;
+        throw new Error(error.code || error.message);
     }
   };
 
@@ -110,9 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error("Firebase not configured.");
     try {
         await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error signing up with email", error);
-        throw error;
+        throw new Error(error.code || error.message);
     }
   };
 
