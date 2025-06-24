@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { User } from 'firebase/auth';
@@ -27,7 +26,7 @@ function FirebaseConfigNotice() {
                         Firebase Not Configured
                     </CardTitle>
                     <CardDescription>
-                        Your Firebase API keys are missing. Please add them to your <code>.env</code> file to enable authentication.
+                        Your Firebase API keys are missing or invalid. Please add them to your <code>.env</code> file to enable authentication.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -51,17 +50,28 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...`}
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConfigValid, setIsConfigValid] = useState(true);
 
-  // If firebase is not configured, show a notice and do nothing else.
+  // If firebase was not initialized at all in firebase.ts (e.g. keys missing from .env)
   if (!auth) {
     return <FirebaseConfigNotice />;
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    // onAuthStateChanged will error out if the API key is invalid.
+    const unsubscribe = onAuthStateChanged(auth,
+      (user) => {
+        // Success
+        setUser(user);
+        setLoading(false);
+      },
+      (error) => {
+        // Failure, likely due to invalid config
+        console.error("Firebase Auth Error:", error);
+        setIsConfigValid(false);
+        setLoading(false);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -81,6 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Error signing out", error);
     }
   };
+
+  // If the config is invalid, show the notice instead of the app.
+  if (!isConfigValid) {
+    return <FirebaseConfigNotice />;
+  }
 
   const value = { user, loading, signInWithGoogle, signOut };
 
