@@ -18,6 +18,7 @@ const ProvideRealTimeFeedbackInputSchema = z.object({
   interviewerQuestion: z.string().describe('The current question asked by the interviewer.'),
   interviewerPersona: z.string().describe('The persona of the interviewer.'),
   jobDescription: z.string().describe('The job description for the role being interviewed for.'),
+  language: z.string().describe('The language for the feedback (e.g., "English", "Japanese").'),
 });
 export type ProvideRealTimeFeedbackInput = z.infer<typeof ProvideRealTimeFeedbackInputSchema>;
 
@@ -34,7 +35,7 @@ const prompt = ai.definePrompt({
   name: 'provideRealTimeFeedbackPrompt',
   input: {schema: ProvideRealTimeFeedbackInputSchema},
   output: {schema: ProvideRealTimeFeedbackOutputSchema},
-  prompt: `You are an AI-powered interview coach providing real-time feedback to the interviewee.
+  prompt: `You are an AI-powered interview coach providing real-time feedback to the interviewee. Provide your feedback in {{language}}.
 
   Based on the interviewer's question, the interviewee's response, the interviewer's persona, and the job description, provide concise and constructive feedback to help the interviewee improve their answer.
 

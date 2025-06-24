@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { provideRealTimeFeedback, speechToText, textToSpeech } from '@/app/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { QAPair } from '@/lib/types';
-import { Bot, ChevronLeft, Lightbulb, Loader2, Mic, Send, Square, Text, User } from 'lucide-react';
+import { Bot, ChevronLeft, ChevronRight, Lightbulb, Loader2, Mic, Send, Square, Text, User } from 'lucide-react';
 
 function InterviewPageComponent() {
   const router = useRouter();
@@ -36,6 +36,7 @@ function InterviewPageComponent() {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioPermissionGranted, setAudioPermissionGranted] = useState<boolean | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [showNextButton, setShowNextButton] = useState(false);
 
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textResponse, setTextResponse] = useState('');
@@ -43,7 +44,6 @@ function InterviewPageComponent() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const isProcessing = isProcessingResponse || isGeneratingAudio || isFinishing;
 
@@ -80,6 +80,43 @@ function InterviewPageComponent() {
     }
   }, [toast]);
   
+  const handleFinishInterview = useCallback(() => {
+    if (isFinishing) return;
+    setIsFinishing(true);
+    const finalTranscript = qaPairs.filter(qa => qa.answer.trim() !== '');
+    if(finalTranscript.length === 0) {
+      toast({ title: "No responses recorded", description: "Finishing interview without assessment.", variant: "destructive" });
+      router.push('/');
+      return;
+    }
+    try {
+      localStorage.setItem(LOCAL_STORAGE_TRANSCRIPT_KEY, JSON.stringify({ transcript: finalTranscript, scenario }));
+      router.push('/assessment');
+    } catch (error) {
+      console.error("Failed to save to localStorage", error);
+      toast({ title: "Could not save interview data.", variant: "destructive" });
+      setIsFinishing(false);
+    }
+  }, [isFinishing, qaPairs, router, scenario, toast]);
+
+  const handleNextQuestion = useCallback(() => {
+    const language = scenario.language || 'en';
+    const questions = INTERVIEW_QUESTIONS[language as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.en;
+
+    if (currentQuestionIndex < questions.length - 1) {
+      const nextIndex = currentQuestionIndex + 1;
+      const nextQuestion = questions[nextIndex];
+      setCurrentQuestionIndex(nextIndex);
+      setTranscript(prev => [...prev, { speaker: 'interviewer', text: nextQuestion }]);
+      setQaPairs(prev => [...prev, { question: nextQuestion, answer: '' }]);
+      setFeedback(null);
+      setShowNextButton(false);
+      getInterviewerAudio(nextQuestion);
+    } else {
+      handleFinishInterview();
+    }
+  }, [currentQuestionIndex, getInterviewerAudio, scenario, handleFinishInterview]);
+  
   // Initial setup
   useEffect(() => {
     if (!isMounted) return;
@@ -97,14 +134,14 @@ function InterviewPageComponent() {
     setScenario(newScenario);
     setInputMode((newScenario.mode as 'voice' | 'text') || 'voice');
     
-    const firstQuestion = INTERVIEW_QUESTIONS[0];
+    const language = newScenario.language || 'en';
+    const questions = INTERVIEW_QUESTIONS[language as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.en;
+    const firstQuestion = questions[0];
+
     setTranscript([{ speaker: 'interviewer', text: firstQuestion }]);
     setQaPairs([{ question: firstQuestion, answer: '' }]);
     getInterviewerAudio(firstQuestion);
 
-    return () => {
-      if(timeoutRef.current) clearTimeout(timeoutRef.current);
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
@@ -120,27 +157,13 @@ function InterviewPageComponent() {
     handleScrollToBottom();
   }, [transcript, handleScrollToBottom]);
 
-  const handleNextQuestion = useCallback(() => {
-    if (currentQuestionIndex < INTERVIEW_QUESTIONS.length - 1) {
-      const nextIndex = currentQuestionIndex + 1;
-      const nextQuestion = INTERVIEW_QUESTIONS[nextIndex];
-      setCurrentQuestionIndex(nextIndex);
-      setTranscript(prev => [...prev, { speaker: 'interviewer', text: nextQuestion }]);
-      setQaPairs(prev => [...prev, { question: nextQuestion, answer: '' }]);
-      setFeedback(null);
-      getInterviewerAudio(nextQuestion);
-    } else {
-      handleFinishInterview();
-    }
-  }, [currentQuestionIndex, getInterviewerAudio]);
-
   const processUserResponse = useCallback(async (response: string) => {
     setIsProcessingResponse(true);
     setFeedback(null);
+    setShowNextButton(false);
     try {
         if (!response.trim()) {
-            toast({ title: "No response detected", description: "Moving to the next question.", variant: "destructive" });
-            handleNextQuestion();
+            toast({ title: "No response detected", description: "Please try again.", variant: "destructive" });
             return;
         }
 
@@ -156,10 +179,10 @@ function InterviewPageComponent() {
             interviewerQuestion: currentQaPair.question,
             jobDescription: `Role: ${scenario.role}, Company: ${scenario.company}, Industry: ${scenario.industry}`,
             interviewerPersona: scenario.persona,
+            language: scenario.language || 'en',
         });
         setFeedback(feedbackResult.feedback);
-
-        timeoutRef.current = setTimeout(handleNextQuestion, 4000);
+        setShowNextButton(true);
 
     } catch (error) {
         console.error("Error processing response:", error);
@@ -167,7 +190,7 @@ function InterviewPageComponent() {
     } finally {
         setIsProcessingResponse(false);
     }
-  }, [qaPairs, currentQuestionIndex, scenario, toast, handleNextQuestion]);
+  }, [qaPairs, currentQuestionIndex, scenario, toast]);
 
   const startRecording = useCallback(async () => {
     if (!audioPermissionGranted || isRecording || inputMode !== 'voice') return;
@@ -214,26 +237,6 @@ function InterviewPageComponent() {
     await processUserResponse(textResponse);
     setTextResponse('');
   };
-
-  const handleFinishInterview = useCallback(() => {
-    if (isFinishing) return;
-    setIsFinishing(true);
-    if(timeoutRef.current) clearTimeout(timeoutRef.current);
-    const finalTranscript = qaPairs.filter(qa => qa.answer.trim() !== '');
-    if(finalTranscript.length === 0) {
-      toast({ title: "No responses recorded", description: "Finishing interview without assessment.", variant: "destructive" });
-      router.push('/');
-      return;
-    }
-    try {
-      localStorage.setItem(LOCAL_STORAGE_TRANSCRIPT_KEY, JSON.stringify({ transcript: finalTranscript, scenario }));
-      router.push('/assessment');
-    } catch (error) {
-      console.error("Failed to save to localStorage", error);
-      toast({ title: "Could not save interview data.", variant: "destructive" });
-      setIsFinishing(false);
-    }
-  }, [isFinishing, qaPairs, router, scenario, toast]);
 
   useEffect(() => {
     if (interviewerAudioUrl && audioRef.current) {
@@ -297,17 +300,24 @@ function InterviewPageComponent() {
               </div>
             </CardContent>
           </Card>
-          <Card className="flex-1">
+          <Card className="flex-1 flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="text-primary" /> Real-time Feedback
               </CardTitle>
               <CardDescription>Get instant tips on your answers.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {isProcessingResponse && <Skeleton className="h-24 w-full" />}
+            <CardContent className="flex-1">
+              {isProcessingResponse && !feedback && <Skeleton className="h-24 w-full" />}
               {feedback && <p className="text-sm text-foreground bg-primary/10 p-3 rounded-md">{feedback}</p>}
             </CardContent>
+            {feedback && showNextButton && (
+                <CardFooter className="pt-0">
+                    <Button onClick={handleNextQuestion} disabled={isProcessing} className="w-full">
+                        Next Question <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </CardFooter>
+            )}
           </Card>
         </aside>
         <div className="md:col-span-2">
@@ -331,7 +341,7 @@ function InterviewPageComponent() {
                       )}
                     </div>
                   ))}
-                   {isProcessing && !isFinishing && (
+                   {isProcessing && !isFinishing && !feedback && (
                     <div className="flex justify-center p-4">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
@@ -348,7 +358,7 @@ function InterviewPageComponent() {
                               <span className="sr-only">Stop Recording</span>
                           </Button>
                       ) : (
-                          <Button size="lg" className="rounded-full w-20 h-20" disabled>
+                          <Button onClick={startRecording} size="lg" className="rounded-full w-20 h-20" disabled={isProcessing || isRecording || interviewerAudioUrl === null}>
                               {isProcessing ? <Loader2 className="h-8 w-8 animate-spin" /> : <Mic className="h-8 w-8" />}
                               <span className="sr-only">Waiting to Record</span>
                           </Button>

@@ -103,8 +103,27 @@ export function ScenarioForm() {
           </div>
         </div>
         <div className="space-y-2">
+          <Label htmlFor="language">Language</Label>
+           <div className="relative">
+            <Languages className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Select name="language" defaultValue="en" required>
+                <SelectTrigger className="pl-9">
+                <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="ja">Japanese</SelectItem>
+                  <SelectItem value="ko">Korean</SelectItem>
+                  <SelectItem value="zh">Mandarin</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
           <Label htmlFor="input-mode">Input Mode</Label>
-          <div className="flex items-center gap-2 rounded-md border border-input h-10 px-3">
+          <div className="flex items-center gap-2 rounded-md border border-input h-10 px-3 justify-center">
              <Text className="h-4 w-4 text-muted-foreground" />
              <Label htmlFor="input-mode-switch" className="text-sm font-normal text-muted-foreground">Text</Label>
              <Switch
@@ -117,7 +136,6 @@ export function ScenarioForm() {
               <Mic className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
-      </div>
       
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? <Loader2 className="animate-spin" /> : "Start Interview"}

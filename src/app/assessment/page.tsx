@@ -99,6 +99,7 @@ function AssessmentPageComponent() {
             userResponse: qa.answer,
             role: interviewData.scenario.role,
             industry: interviewData.scenario.industry,
+            language: interviewData.scenario.language || 'en',
           }).then(res => ({ ...res, interviewQuestion: qa.question }))
           .catch(err => {
             console.error("Failed to analyze a response:", err);

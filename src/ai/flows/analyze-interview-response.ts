@@ -20,6 +20,7 @@ const AnalyzeInterviewResponseInputSchema = z.object({
     .describe('The user response to the interview question.'),
   role: z.string().describe('The role the user is interviewing for.'),
   industry: z.string().describe('The industry of the company.'),
+  language: z.string().describe('The language for the assessment (e.g., "English", "Japanese").'),
 });
 export type AnalyzeInterviewResponseInput = z.infer<
   typeof AnalyzeInterviewResponseInputSchema
@@ -49,7 +50,7 @@ const prompt = ai.definePrompt({
   name: 'analyzeInterviewResponsePrompt',
   input: {schema: AnalyzeInterviewResponseInputSchema},
   output: {schema: AnalyzeInterviewResponseOutputSchema},
-  prompt: `You are an expert interview coach. Analyze the following interview response using the STAR method and provide feedback.
+  prompt: `You are an expert interview coach. Analyze the following interview response using the STAR method and provide feedback in {{language}}.
 
 Interview Question: {{{interviewQuestion}}}
 User Response: {{{userResponse}}}
