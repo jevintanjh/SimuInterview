@@ -52,30 +52,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isConfigValid, setIsConfigValid] = useState(true);
 
-  // If firebase was not initialized at all in firebase.ts (e.g. keys missing from .env)
-  if (!auth) {
-    return <FirebaseConfigNotice />;
-  }
-
   useEffect(() => {
-    // onAuthStateChanged will error out if the API key is invalid.
-    const unsubscribe = onAuthStateChanged(auth,
-      (user) => {
-        // Success
-        setUser(user);
-        setLoading(false);
-      },
-      (error) => {
-        // Failure, likely due to invalid config
-        console.error("Firebase Auth Error:", error);
-        setIsConfigValid(false);
-        setLoading(false);
-      }
-    );
-    return () => unsubscribe();
+    if (!auth) {
+      setIsConfigValid(false);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const unsubscribe = onAuthStateChanged(auth,
+        (user) => {
+          // Success
+          setUser(user);
+          setIsConfigValid(true);
+          setLoading(false);
+        },
+        (error) => {
+          // Failure on async check
+          console.error("Firebase Auth Error (async):", error);
+          setIsConfigValid(false);
+          setLoading(false);
+        }
+      );
+      return () => unsubscribe();
+    } catch (error) {
+      // Failure on sync setup
+      console.error("Firebase Auth Error (sync):", error);
+      setIsConfigValid(false);
+      setLoading(false);
+    }
   }, []);
 
   const signInWithGoogle = async () => {
+    if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -85,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!auth) return;
     try {
       await firebaseSignOut(auth);
     } catch (error) {
@@ -92,7 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // If the config is invalid, show the notice instead of the app.
   if (!isConfigValid) {
     return <FirebaseConfigNotice />;
   }
