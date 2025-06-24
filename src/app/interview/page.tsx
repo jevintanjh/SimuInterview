@@ -296,7 +296,7 @@ function InterviewPageComponent() {
                 </div>
               </ScrollArea>
               <div className="flex flex-col gap-2 pt-4 border-t">
-                 <audio ref={audioRef} src={interviewerAudioUrl ?? ''} onEnded={startRecording} className="hidden" />
+                 <audio ref={audioRef} src={interviewerAudioUrl ?? undefined} onEnded={startRecording} className="hidden" />
                  <div className="flex justify-center items-center gap-4">
                     {isRecording ? (
                         <Button onClick={stopRecording} variant="destructive" size="lg" className="rounded-full w-20 h-20">
