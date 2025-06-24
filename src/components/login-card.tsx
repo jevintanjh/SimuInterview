@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Tv, Users, Bot } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Sparkles, Tv, Users, Bot, Loader2 } from 'lucide-react';
 
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -36,7 +39,57 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   }
 
 export function LoginCard() {
-    const { signInWithGoogle } = useAuth();
+    const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<'google' | 'email' | null>(null);
+
+    const handleGoogleSignIn = async () => {
+        setLoading('google');
+        setError(null);
+        try {
+            await signInWithGoogle();
+        } catch (err: any) {
+            setError(err.message.replace('Firebase: ', ''));
+        } finally {
+            if (!user) setLoading(null);
+        }
+    };
+
+    const handleEmailSubmit = async (type: 'signIn' | 'signUp') => {
+        if (!email || !password) {
+            setError("Please enter both email and password.");
+            return;
+        }
+        if (type === 'signUp' && password.length < 6) {
+            setError("Password must be at least 6 characters long.");
+            return;
+        }
+
+        setLoading('email');
+        setError(null);
+        try {
+            if (type === 'signIn') {
+                await signInWithEmail(email, password);
+            } else {
+                await signUpWithEmail(email, password);
+            }
+        } catch (err: any) {
+            const friendlyMessage = err.code?.includes('auth/invalid-credential') 
+                ? 'Invalid credentials. Please check your email and password.'
+                : err.code?.includes('auth/email-already-in-use')
+                ? 'This email is already registered.'
+                : 'An error occurred. Please try again.';
+            setError(friendlyMessage);
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const { user } = useAuth();
+
+
     return (
         <div className="flex flex-col md:flex-row items-center justify-center gap-12 p-4">
              <div className="max-w-md space-y-6">
@@ -85,10 +138,43 @@ export function LoginCard() {
                     <CardDescription>Sign in to begin your 3 free interview simulations.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={signInWithGoogle} className="w-full">
-                        <GoogleIcon className="mr-2" />
-                        Sign in with Google
-                    </Button>
+                    <div className="space-y-4">
+                         <Button onClick={handleGoogleSignIn} disabled={!!loading} className="w-full">
+                            {loading === 'google' ? <Loader2 className="mr-2 animate-spin" /> : <GoogleIcon className="mr-2" />}
+                            Sign in with Google
+                        </Button>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground">
+                                    Or with email
+                                </span>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!!loading} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={!!loading} />
+                        </div>
+
+                         {error && (
+                            <p className="text-sm text-destructive">{error}</p>
+                        )}
+
+                        <div className="flex gap-2">
+                            <Button onClick={() => handleEmailSubmit('signIn')} disabled={loading === 'email' || loading === 'google'} className="flex-1">
+                                {loading === 'email' ? <Loader2 className="animate-spin" /> : 'Sign In'}
+                            </Button>
+                            <Button onClick={() => handleEmailSubmit('signUp')} disabled={loading === 'email' || loading === 'google'} variant="secondary" className="flex-1">
+                               Sign Up
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>
