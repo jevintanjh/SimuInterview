@@ -3,17 +3,19 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Briefcase, Building, Languages, Loader2, UserCog } from "lucide-react"
+import { Briefcase, Building, Languages, Loader2, Mic, Text, UserCog } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 
 export function ScenarioForm() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -26,6 +28,7 @@ export function ScenarioForm() {
         params.append(key, value)
       }
     }
+    params.append('mode', inputMode);
     
     router.push(`/interview?${params.toString()}`)
   }
@@ -83,28 +86,10 @@ export function ScenarioForm() {
       
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="language">Interview Language</Label>
-          <div className="relative">
-            <Languages className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Select name="language" defaultValue="english" required>
-                <SelectTrigger className="pl-9">
-                <SelectValue placeholder="Select a language" />
-                </SelectTrigger>
-                <SelectContent>
-                <SelectItem value="english">English</SelectItem>
-                <SelectItem value="mandarin">Mandarin</SelectItem>
-                <SelectItem value="japanese">Japanese</SelectItem>
-                <SelectItem value="korean">Korean</SelectItem>
-                <SelectItem value="spanish">Spanish</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="persona">Interviewer Persona</Label>
            <div className="relative">
             <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Select name="persona" defaultValue="friendly" required>
+            <Select name="persona" defaultValue="Friendly & Casual" required>
                 <SelectTrigger className="pl-9">
                 <SelectValue placeholder="Select a persona" />
                 </SelectTrigger>
@@ -115,6 +100,21 @@ export function ScenarioForm() {
                 <SelectItem value="Skeptical & Challenging">Skeptical & Challenging</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="input-mode">Input Mode</Label>
+          <div className="flex items-center gap-2 rounded-md border border-input h-10 px-3">
+             <Text className="h-4 w-4 text-muted-foreground" />
+             <Label htmlFor="input-mode-switch" className="text-sm font-normal text-muted-foreground">Text</Label>
+             <Switch
+                id="input-mode-switch"
+                checked={inputMode === 'voice'}
+                onCheckedChange={(checked) => setInputMode(checked ? 'voice' : 'text')}
+                className="mx-2"
+              />
+              <Label htmlFor="input-mode-switch" className="text-sm font-normal text-muted-foreground">Voice</Label>
+              <Mic className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
       </div>
