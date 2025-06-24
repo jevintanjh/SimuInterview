@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { User } from 'firebase/auth';
@@ -67,52 +68,76 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...`}
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // This boolean now safely checks if Firebase was initialized correctly.
-  const isConfigValid = !!auth;
+  const [configError, setConfigError] = useState(false);
 
   useEffect(() => {
-    // If config is not valid, don't attempt to set up the listener.
-    if (!isConfigValid) {
+    if (!auth) {
+        setConfigError(true);
         setLoading(false);
         return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
         setUser(user);
         setLoading(false);
-    }, (error) => {
-        // Handle potential errors during listener setup
+      }, 
+      (error) => {
         console.error("Auth state listener error:", error);
+        if (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid') {
+            setConfigError(true);
+        }
         setLoading(false);
-    });
+      }
+    );
 
     return () => unsubscribe();
-  }, [isConfigValid]);
+  }, []);
+
+  const handleAuthError = (error: any) => {
+    const errorCode = error.code || '';
+    if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid') {
+      setConfigError(true);
+    } else {
+      // Rethrow other errors to be handled by the UI
+      throw error;
+    }
+  };
 
   const signInWithGoogle = async () => {
-    if (!auth) throw new Error("Firebase is not configured.");
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    if (!auth) {
+        setConfigError(true);
+        return;
+    }
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        handleAuthError(error);
+    }
   };
   
   const signInWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase not configured.");
+    if (!auth) {
+        setConfigError(true);
+        return;
+    }
     try {
         await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-        console.error("Error signing in with email", error);
-        throw new Error(error.code || 'An unknown error occurred');
+    } catch (error) {
+        handleAuthError(error);
     }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase not configured.");
+    if (!auth) {
+        setConfigError(true);
+        return;
+    }
     try {
         await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-        console.error("Error signing up with email", error);
-        throw new Error(error.code || 'An unknown error occurred');
+    } catch (error) {
+        handleAuthError(error);
     }
   };
 
@@ -120,9 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) return;
     await firebaseSignOut(auth);
   };
-
-  // If Firebase config is invalid, show the notice instead of crashing.
-  if (!isConfigValid) {
+  
+  if (configError) {
     return <FirebaseConfigNotice />;
   }
 

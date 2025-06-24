@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -39,7 +40,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   }
 
 export function LoginCard() {
-    const { signInWithGoogle, signInWithEmail, signUpWithEmail, user } = useAuth();
+    const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export function LoginCard() {
         } catch (err: any) {
             setError(err.message.replace('Firebase: ', ''));
         } finally {
-            if (!user) setLoading(null);
+            setLoading(null);
         }
     };
 
@@ -85,6 +86,8 @@ export function LoginCard() {
                 friendlyMessage = 'This email is already registered. Please sign in.';
             } else if (errorCode.includes('auth/invalid-email')) {
                 friendlyMessage = 'Please enter a valid email address.';
+            } else if (errorCode.includes('auth/weak-password')) {
+                friendlyMessage = 'Password is too weak. Must be at least 6 characters.';
             }
             
             setError(friendlyMessage);
