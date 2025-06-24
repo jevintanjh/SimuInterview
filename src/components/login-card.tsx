@@ -76,14 +76,19 @@ export function LoginCard() {
                 await signUpWithEmail(email, password);
             }
         } catch (err: any) {
-            const errorMessage = err.message || '';
-            const friendlyMessage = errorMessage.includes('auth/invalid-credential') 
-                ? 'Invalid credentials. Please check your email and password.'
-                : errorMessage.includes('auth/email-already-in-use')
-                ? 'This email is already registered.'
-                : errorMessage.includes('auth/api-key-not-valid')
-                ? 'Firebase API Key is invalid. Please check your setup.'
-                : 'An error occurred. Please try again.';
+            let friendlyMessage = 'An error occurred. Please try again.';
+            const errorCode = err.message || '';
+
+            if (errorCode.includes('auth/invalid-credential')) {
+                friendlyMessage = 'Invalid credentials. Please check your email and password.';
+            } else if (errorCode.includes('auth/email-already-in-use')) {
+                friendlyMessage = 'This email is already registered.';
+            } else if (errorCode.includes('auth/api-key-not-valid')) {
+                friendlyMessage = 'Firebase API Key is invalid. Please check your project setup.';
+            } else if (errorCode.includes('auth/invalid-email')) {
+                friendlyMessage = 'Please enter a valid email address.';
+            }
+            
             setError(friendlyMessage);
         } finally {
             setLoading(null);

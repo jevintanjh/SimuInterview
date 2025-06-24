@@ -101,8 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
-        console.error("Error signing in with email", error);
-        throw new Error(error.code || error.message);
+        console.error("Error signing in with email", error.code);
+        throw new Error(error.code || 'An unknown error occurred during sign-in.');
     }
   };
 
@@ -111,8 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
         await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
-        console.error("Error signing up with email", error);
-        throw new Error(error.code || error.message);
+        console.error("Error signing up with email", error.code);
+        throw new Error(error.code || 'An unknown error occurred during sign-up.');
     }
   };
 
