@@ -3,7 +3,6 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
 import { analyzeInterviewResponse } from '@/app/actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { InterviewData, StarAssessment } from '@/lib/types';
-import { CheckCircle2, ChevronLeft, ClipboardList, Loader2, Star, XCircle } from 'lucide-react';
-import { UserNav } from '@/components/auth/user-nav';
+import { ChevronLeft, ClipboardList, Loader2, Star, XCircle } from 'lucide-react';
 
 function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: string } & StarAssessment)[] }) {
     if (!assessments.length) return null;
@@ -70,17 +68,12 @@ function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: 
 
 function AssessmentPageComponent() {
   const router = useRouter();
-  const { user } = useAuth();
   const { toast } = useToast();
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   const [assessments, setAssessments] = useState<({ interviewQuestion: string } & StarAssessment)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if(!user) {
-        router.replace('/');
-        return;
-    }
     try {
       const storedData = localStorage.getItem(LOCAL_STORAGE_TRANSCRIPT_KEY);
       if (!storedData) {
@@ -94,7 +87,7 @@ function AssessmentPageComponent() {
       toast({ title: 'Failed to load interview data.', variant: 'destructive' });
       router.replace('/');
     }
-  }, [router, toast, user]);
+  }, [router, toast]);
   
   useEffect(() => {
     if (interviewData) {
@@ -127,9 +120,6 @@ function AssessmentPageComponent() {
     }
   }, [interviewData, toast]);
 
-  if (!user) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen">
@@ -142,9 +132,7 @@ function AssessmentPageComponent() {
             <h1 className="text-3xl font-bold font-headline">Interview Assessment</h1>
             {interviewData && <p className="text-muted-foreground">{interviewData.scenario.role} at {interviewData.scenario.company}</p>}
         </div>
-        <div>
-            <UserNav />
-        </div>
+        <div />
       </header>
 
       <main className="max-w-4xl mx-auto">

@@ -3,9 +3,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
 import { provideRealTimeFeedback, speechToText, textToSpeech } from '@/app/actions';
-import { decrementUsageCount } from '@/lib/usage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +12,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { QAPair } from '@/lib/types';
-import { Bot, ChevronLeft, Lightbulb, Loader2, Mic, MicOff, Square, User } from 'lucide-react';
+import { Bot, ChevronLeft, Lightbulb, Loader2, Mic, Square, User } from 'lucide-react';
 
 function InterviewPageComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -44,14 +41,9 @@ function InterviewPageComponent() {
 
   const isProcessing = isTranscribing || isGeneratingAudio || isFinishing;
 
-  // Authentication and permission check
+  // Permission check
   useEffect(() => {
     setIsMounted(true);
-    if (!user) {
-      toast({ title: "Not Authenticated", description: "Redirecting to login page.", variant: "destructive" });
-      router.replace('/');
-      return;
-    }
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(() => setAudioPermissionGranted(true))
       .catch(() => {
@@ -62,7 +54,7 @@ function InterviewPageComponent() {
           variant: "destructive",
         });
       });
-  }, [user, router, toast]);
+  }, [toast]);
 
   const getInterviewerAudio = useCallback(async (text: string) => {
     if (!text) return;
@@ -81,7 +73,7 @@ function InterviewPageComponent() {
   
   // Initial setup
   useEffect(() => {
-    if (!isMounted || !user) return;
+    if (!isMounted) return;
 
     const newScenario: Record<string, string> = {};
     for (const [key, value] of searchParams.entries()) {
@@ -94,7 +86,6 @@ function InterviewPageComponent() {
     }
     
     setScenario(newScenario);
-    decrementUsageCount(user.uid);
     
     const firstQuestion = INTERVIEW_QUESTIONS[0];
     setTranscript([{ speaker: 'interviewer', text: firstQuestion }]);
@@ -105,7 +96,7 @@ function InterviewPageComponent() {
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMounted, searchParams, user]);
+  }, [isMounted, searchParams]);
 
 
   const handleScrollToBottom = useCallback(() => {
@@ -229,7 +220,7 @@ function InterviewPageComponent() {
     }
   }, [interviewerAudioUrl]);
 
-  if (!isMounted || !user) {
+  if (!isMounted) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

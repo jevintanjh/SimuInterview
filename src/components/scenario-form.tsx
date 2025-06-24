@@ -1,71 +1,23 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Briefcase, Building, CreditCard, Languages, Loader2, UserCog } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
-import { addTries, getUsageCount } from "@/lib/usage"
-import { MAX_FREE_TRIES } from "@/lib/constants"
+import { Briefcase, Building, Languages, Loader2, UserCog } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { useToast } from "@/hooks/use-toast"
 
 export function ScenarioForm() {
   const router = useRouter()
-  const { user } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [remainingTries, setRemainingTries] = useState(MAX_FREE_TRIES);
-
-  useEffect(() => {
-    if (user) {
-      setRemainingTries(getUsageCount(user.uid));
-    }
-  }, [user]);
-
-  const handlePurchase = () => {
-    // TODO: Implement Stripe checkout flow
-    // 1. Create a checkout session on the server
-    // 2. Redirect to Stripe checkout
-    // 3. Handle webhook to update user's tries in the database
-    toast({
-      title: "Purchase Successful (Simulated)",
-      description: "We've added 1 more interview credit to your account.",
-    });
-    if (user) {
-      addTries(user.uid, 1);
-      setRemainingTries(getUsageCount(user.uid));
-    }
-  }
-
-  if (user && remainingTries <= 0) {
-    return (
-        <Card className="bg-muted/50 border-dashed">
-            <CardHeader>
-                <CardTitle>Out of Free Tries</CardTitle>
-                <CardDescription>You've used all your {MAX_FREE_TRIES} free interview simulations. Purchase more to continue practicing.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button onClick={handlePurchase} className="w-full">
-                    <CreditCard className="mr-2"/>
-                    Purchase Simulation ($3.00)
-                </Button>
-            </CardContent>
-        </Card>
-    )
-  }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!user) {
-        toast({ title: "Authentication error", description: "Please sign in again.", variant: "destructive" });
-        return;
-    }
-
+    
     setIsLoading(true)
     const formData = new FormData(event.currentTarget)
     const params = new URLSearchParams()
@@ -80,9 +32,6 @@ export function ScenarioForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6">
-      <p className="text-sm text-center text-muted-foreground">
-        You have <span className="font-bold text-primary">{remainingTries}</span> free {remainingTries === 1 ? 'try' : 'tries'} remaining.
-      </p>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="role">Your Target Role</Label>
