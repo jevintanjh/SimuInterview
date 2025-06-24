@@ -1,24 +1,26 @@
+
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import { analyzeInterviewResponse } from '@/app/actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { InterviewData, StarAssessment } from '@/lib/types';
-import { CheckCircle2, ChevronLeft, ClipboardList, Loader2, Star, ThumbsUp, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ClipboardList, Loader2, Star, XCircle } from 'lucide-react';
+import { UserNav } from '@/components/auth/user-nav';
 
-function AssessmentReport({ assessments }: { assessments: (StarAssessment | null)[] }) {
+function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: string } & StarAssessment)[] }) {
     if (!assessments.length) return null;
 
     return (
         <Accordion type="single" collapsible className="w-full space-y-2">
-            {assessments.map((assessment, index) => assessment && (
+            {assessments.map((assessment, index) => (
                 <AccordionItem value={`item-${index}`} key={index} className="bg-card border rounded-md px-4">
                     <AccordionTrigger className="text-left hover:no-underline">
                         <span className="font-semibold">Q{index + 1}: {assessment.interviewQuestion}</span>
@@ -68,12 +70,17 @@ function AssessmentReport({ assessments }: { assessments: (StarAssessment | null
 
 function AssessmentPageComponent() {
   const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
-  const [assessments, setAssessments] = useState<(StarAssessment | null)[]>([]);
+  const [assessments, setAssessments] = useState<({ interviewQuestion: string } & StarAssessment)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if(!user) {
+        router.replace('/');
+        return;
+    }
     try {
       const storedData = localStorage.getItem(LOCAL_STORAGE_TRANSCRIPT_KEY);
       if (!storedData) {
@@ -84,10 +91,10 @@ function AssessmentPageComponent() {
       const parsedData: InterviewData = JSON.parse(storedData);
       setInterviewData(parsedData);
     } catch (error) {
-      toast({ title: 'Failed to load interview data.', description: 'Please try again.', variant: 'destructive' });
+      toast({ title: 'Failed to load interview data.', variant: 'destructive' });
       router.replace('/');
     }
-  }, [router, toast]);
+  }, [router, toast, user]);
   
   useEffect(() => {
     if (interviewData) {
@@ -99,7 +106,8 @@ function AssessmentPageComponent() {
             userResponse: qa.answer,
             role: interviewData.scenario.role,
             industry: interviewData.scenario.industry,
-          }).catch(err => {
+          }).then(res => ({ ...res, interviewQuestion: qa.question }))
+          .catch(err => {
             console.error("Failed to analyze a response:", err);
             toast({
               title: "Analysis Error",
@@ -111,13 +119,17 @@ function AssessmentPageComponent() {
         );
 
         const results = await Promise.all(assessmentPromises);
-        setAssessments(results.filter(Boolean));
+        const validResults = results.filter((r): r is { interviewQuestion: string } & StarAssessment => r !== null);
+        setAssessments(validResults);
         setIsLoading(false);
       };
       generateAssessments();
     }
   }, [interviewData, toast]);
 
+  if (!user) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen">
@@ -130,7 +142,9 @@ function AssessmentPageComponent() {
             <h1 className="text-3xl font-bold font-headline">Interview Assessment</h1>
             {interviewData && <p className="text-muted-foreground">{interviewData.scenario.role} at {interviewData.scenario.company}</p>}
         </div>
-        <div className="w-32"></div>
+        <div>
+            <UserNav />
+        </div>
       </header>
 
       <main className="max-w-4xl mx-auto">
