@@ -89,15 +89,21 @@ export function ScenarioForm() {
           <Label htmlFor="persona">Interviewer Persona</Label>
            <div className="relative">
             <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Select name="persona" defaultValue="Friendly & Casual" required>
+            <Select name="persona" defaultValue="The Behavioral Interviewer" required>
                 <SelectTrigger className="pl-9">
                 <SelectValue placeholder="Select a persona" />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="Friendly & Casual">Friendly & Casual</SelectItem>
-                <SelectItem value="Strict & Formal">Strict & Formal</SelectItem>
-                <SelectItem value="Technical & In-depth">Technical & In-depth</SelectItem>
-                <SelectItem value="Skeptical & Challenging">Skeptical & Challenging</SelectItem>
+                  <SelectItem value="The Behavioral Interviewer">The Behavioral Interviewer</SelectItem>
+                  <SelectItem value="The Technical Interviewer">The Technical Interviewer</SelectItem>
+                  <SelectItem value="The Stress Interviewer">The Stress Interviewer</SelectItem>
+                  <SelectItem value="The Friendly Interviewer">The Friendly Interviewer</SelectItem>
+                  <SelectItem value="The Executive Interviewer">The Executive Interviewer</SelectItem>
+                  <SelectItem value="The Panel Interviewers">The Panel Interviewers</SelectItem>
+                  <SelectItem value="The Structured Interviewer">The Structured Interviewer</SelectItem>
+                  <SelectItem value="The Unstructured Interviewer">The Unstructured Interviewer</SelectItem>
+                  <SelectItem value="The Peer Interviewer">The Peer Interviewer</SelectItem>
+                  <SelectItem value="The HR Interviewer">The HR Interviewer</SelectItem>
                 </SelectContent>
             </Select>
           </div>
