@@ -10,43 +10,42 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
-import type { InterviewData, StarAssessment } from '@/lib/types';
+import type { InterviewData, CompetencyAssessment } from '@/lib/types';
 import { ChevronLeft, ClipboardList, Loader2, Star, XCircle } from 'lucide-react';
 
-function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: string } & StarAssessment)[] }) {
+function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: string } & CompetencyAssessment)[] }) {
     if (!assessments.length) return null;
+
+    const renderStars = (score: number) => {
+        return (
+            <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                    <Star
+                        key={i}
+                        className={`w-5 h-5 ${i < score ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground'}`}
+                    />
+                ))}
+            </div>
+        );
+    };
 
     return (
         <Accordion type="single" collapsible className="w-full space-y-2">
             {assessments.map((assessment, index) => (
                 <AccordionItem value={`item-${index}`} key={index} className="bg-card border rounded-md px-4">
                     <AccordionTrigger className="text-left hover:no-underline">
-                        <span className="font-semibold">Q{index + 1}: {assessment.interviewQuestion}</span>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between w-full pr-4">
+                            <span className="font-semibold flex-1">Q{index + 1}: {assessment.interviewQuestion}</span>
+                            <div className="flex items-center gap-2 mt-2 md:mt-0">
+                                <span className="text-sm font-medium text-muted-foreground">{assessment.competency}</span>
+                                {renderStars(assessment.score)}
+                            </div>
+                        </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <h4 className="font-semibold text-primary">Overall Feedback</h4>
-                            <p>{assessment.overallFeedback}</p>
-                            
-                            <h4 className="font-semibold text-primary mt-4">STAR Analysis</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <h5 className="font-semibold flex items-center gap-1"><Star className="w-4 h-4 text-amber-400"/>Situation</h5>
-                                    <p className="text-sm text-muted-foreground">{assessment.starAssessment.situation}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <h5 className="font-semibold flex items-center gap-1"><Star className="w-4 h-4 text-amber-400"/>Task</h5>
-                                    <p className="text-sm text-muted-foreground">{assessment.starAssessment.task}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <h5 className="font-semibold flex items-center gap-1"><Star className="w-4 h-4 text-amber-400"/>Action</h5>
-                                    <p className="text-sm text-muted-foreground">{assessment.starAssessment.action}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <h5 className="font-semibold flex items-center gap-1"><Star className="w-4 h-4 text-amber-400"/>Result</h5>
-                                    <p className="text-sm text-muted-foreground">{assessment.starAssessment.result}</p>
-                                </div>
-                            </div>
+                            <h4 className="font-semibold text-primary">Detailed Assessment</h4>
+                            <p>{assessment.assessment}</p>
 
                             {assessment.suggestions.length > 0 && (
                                 <>
@@ -70,7 +69,7 @@ function AssessmentPageComponent() {
   const router = useRouter();
   const { toast } = useToast();
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
-  const [assessments, setAssessments] = useState<({ interviewQuestion: string } & StarAssessment)[]>([]);
+  const [assessments, setAssessments] = useState<({ interviewQuestion: string } & CompetencyAssessment)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -113,7 +112,7 @@ function AssessmentPageComponent() {
         );
 
         const results = await Promise.all(assessmentPromises);
-        const validResults = results.filter((r): r is { interviewQuestion: string } & StarAssessment => r !== null);
+        const validResults = results.filter((r): r is { interviewQuestion: string } & CompetencyAssessment => r !== null);
         setAssessments(validResults);
         setIsLoading(false);
       };
@@ -140,15 +139,15 @@ function AssessmentPageComponent() {
         <Card className="mb-8">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><ClipboardList /> Assessment Report</CardTitle>
-                <CardDescription>Here's a detailed breakdown of your performance based on the STAR method.</CardDescription>
+                <CardDescription>Here's a detailed breakdown of your performance based on key competencies.</CardDescription>
             </CardHeader>
         </Card>
         
         {isLoading && (
             <div className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
             </div>
         )}
 

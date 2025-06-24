@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview A flow to analyze interview responses using the STAR method and provide feedback.
+ * @fileOverview A flow to analyze interview responses using a competency-based framework.
  *
- * - analyzeInterviewResponse - A function that takes an interview response and returns an assessment based on the STAR method.
+ * - analyzeInterviewResponse - A function that takes an interview response and returns a competency-based assessment.
  * - AnalyzeInterviewResponseInput - The input type for the analyzeInterviewResponse function.
  * - AnalyzeInterviewResponseOutput - The return type for the analyzeInterviewResponse function.
  */
@@ -27,14 +27,10 @@ export type AnalyzeInterviewResponseInput = z.infer<
 >;
 
 const AnalyzeInterviewResponseOutputSchema = z.object({
-  overallFeedback: z.string().describe('Overall feedback on the response.'),
-  starAssessment: z.object({
-    situation: z.string().describe('Assessment of the situation component.'),
-    task: z.string().describe('Assessment of the task component.'),
-    action: z.string().describe('Assessment of the action component.'),
-    result: z.string().describe('Assessment of the result component.'),
-  }),
-  suggestions: z.array(z.string()).describe('Suggestions for improvement.'),
+  competency: z.string().describe('The primary competency assessed in the response (e.g., Strategic Thinking, Coaching & Facilitation, Data-Driven Thinking).'),
+  assessment: z.string().describe('A detailed assessment of how well the user demonstrated the competency.'),
+  score: z.number().min(1).max(5).describe('A score from 1 to 5 representing the proficiency in this competency, where 1 is poor and 5 is excellent.'),
+  suggestions: z.array(z.string()).describe('Specific suggestions for how the user could better demonstrate this competency in their response.'),
 });
 export type AnalyzeInterviewResponseOutput = z.infer<
   typeof AnalyzeInterviewResponseOutputSchema
@@ -50,16 +46,23 @@ const prompt = ai.definePrompt({
   name: 'analyzeInterviewResponsePrompt',
   input: {schema: AnalyzeInterviewResponseInputSchema},
   output: {schema: AnalyzeInterviewResponseOutputSchema},
-  prompt: `You are an expert interview coach. Analyze the following interview response using the STAR method and provide feedback in {{language}}.
+  prompt: `You are an expert interview coach specializing in competency-based assessments. Your task is to analyze an interview response based on the role the user is interviewing for.
 
-Interview Question: {{{interviewQuestion}}}
-User Response: {{{userResponse}}}
+First, identify the primary competency being evaluated by the interview question. Examples of competencies include Strategic Thinking, Leadership, Coaching & Facilitation, Data-Driven Thinking, Communication, Teamwork, etc.
+
+Then, evaluate the user's response to assess how effectively they demonstrated this competency. Provide a detailed assessment, a score from 1 (poor) to 5 (excellent), and specific suggestions for improvement.
+
+The assessment should be in {{language}}.
+
+**Role Context:**
 Role: {{{role}}}
 Industry: {{{industry}}}
 
-Provide overall feedback, a STAR assessment (Situation, Task, Action, Result), and suggestions for improvement.
+**Interview Exchange:**
+Question: {{{interviewQuestion}}}
+User's Response: {{{userResponse}}}
 
-Output in JSON format:
+Provide your analysis in a structured JSON format.
 `,
 });
 

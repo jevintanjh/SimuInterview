@@ -11,4 +11,4 @@ export type InterviewData = {
     scenario: Record<string, string>;
 }
 
-export type StarAssessment = Awaited<ReturnType<typeof analyzeInterviewResponse>>
+export type CompetencyAssessment = Awaited<ReturnType<typeof analyzeInterviewResponse>>
