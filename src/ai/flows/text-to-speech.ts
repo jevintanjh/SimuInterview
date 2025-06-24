@@ -16,7 +16,7 @@ const TextToSpeechInputSchema = z.string();
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 const TextToSpeechOutputSchema = z.object({
-  audioDataUri: z.string().describe("The generated audio as a data URI."),
+  audioDataUri: z.string().nullable().describe("The generated audio as a data URI. Null if generation fails."),
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
@@ -66,33 +66,41 @@ const textToSpeechFlow = ai.defineFlow(
       return ttsCache.get(query)!;
     }
 
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' },
+    try {
+      const { media } = await ai.generate({
+        model: 'googleai/gemini-2.5-flash-preview-tts',
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Algenib' },
+            },
           },
         },
-      },
-      prompt: query,
-    });
-    if (!media) {
-      throw new Error('no media returned');
+        prompt: query,
+      });
+      if (!media) {
+        throw new Error('no media returned');
+      }
+      const audioBuffer = Buffer.from(
+        media.url.substring(media.url.indexOf(',') + 1),
+        'base64'
+      );
+      
+      const result = {
+        audioDataUri: 'data:audio/wav;base64,' + (await toWav(audioBuffer)),
+      };
+  
+      // Store the newly generated audio in the cache
+      ttsCache.set(query, result);
+  
+      return result;
+    } catch (error) {
+        console.error("Text-to-speech API call failed, likely due to quota limits:", error);
+        // Cache the failure to avoid retrying on the same text
+        const failureResult = { audioDataUri: null };
+        ttsCache.set(query, failureResult);
+        return failureResult;
     }
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-    
-    const result = {
-      audioDataUri: 'data:audio/wav;base64,' + (await toWav(audioBuffer)),
-    };
-
-    // Store the newly generated audio in the cache
-    ttsCache.set(query, result);
-
-    return result;
   }
 );

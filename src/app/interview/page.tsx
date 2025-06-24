@@ -71,7 +71,15 @@ function InterviewPageComponent() {
     setInterviewerAudioUrl(null);
     try {
       const { audioDataUri } = await textToSpeech(text);
-      setInterviewerAudioUrl(audioDataUri);
+      if (audioDataUri) {
+        setInterviewerAudioUrl(audioDataUri);
+      } else {
+        toast({
+          title: 'Audio Generation Unavailable',
+          description: 'You can continue the interview using the microphone or text input.',
+          variant: 'default',
+        });
+      }
     } catch (error) {
       console.error("Error generating audio:", error);
       toast({ title: "Audio Generation Failed", variant: "destructive" });
@@ -361,7 +369,7 @@ function InterviewPageComponent() {
                               <span className="sr-only">Stop Recording</span>
                           </Button>
                       ) : (
-                          <Button onClick={startRecording} size="lg" className="rounded-full w-20 h-20" disabled={isProcessing || isRecording || interviewerAudioUrl === null}>
+                          <Button onClick={startRecording} size="lg" className="rounded-full w-20 h-20" disabled={isProcessing || isRecording}>
                               {isProcessing ? <Loader2 className="h-8 w-8 animate-spin" /> : <Mic className="h-8 w-8" />}
                               <span className="sr-only">Waiting to Record</span>
                           </Button>
