@@ -1,5 +1,4 @@
 import type { analyzeInterviewResponse } from "@/app/actions";
-import type { Awaited } from "drizzle-orm";
 
 export type QAPair = {
     question: string;
