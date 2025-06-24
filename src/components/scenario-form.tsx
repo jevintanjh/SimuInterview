@@ -3,24 +3,51 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Briefcase, Building, Languages, Loader2, Mic, Text, UserCog } from "lucide-react"
+import { Briefcase, Building, Languages, Loader2, Mic, Text, UserCog, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/auth-context"
+import { getUsageCount, decrementUsageCount } from "@/lib/usage"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function ScenarioForm() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice')
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  
+  const usageCount = user ? getUsageCount(user.uid) : 0;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be signed in to start an interview.", variant: "destructive" });
+        return;
+    }
+
+    if (getUsageCount(user.uid) <= 0) {
+        setShowUpgradeDialog(true);
+        return;
+    }
+
     setIsLoading(true)
+    decrementUsageCount(user.uid);
     const formData = new FormData(event.currentTarget)
     const params = new URLSearchParams()
     for (const [key, value] of formData.entries()) {
@@ -34,6 +61,7 @@ export function ScenarioForm() {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="grid gap-6">
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -144,8 +172,27 @@ export function ScenarioForm() {
         </div>
       
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? <Loader2 className="animate-spin" /> : "Start Interview"}
+        {isLoading ? <Loader2 className="animate-spin" /> : `Start Interview (${usageCount} tries left)`}
       </Button>
     </form>
+
+    <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You're out of free trials!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Thanks for using SimuInterview! Please upgrade to continue practicing with unlimited interviews and feedback.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => window.open("https://stripe.com", "_blank")}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Upgrade Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
