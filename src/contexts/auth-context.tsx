@@ -4,7 +4,7 @@ import type { User } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AuthContextType {
@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function FirebaseConfigNotice() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-background">
-            <Card className="w-full max-w-lg shadow-lg">
+            <Card className="w-full max-w-2xl shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -33,20 +33,31 @@ function FirebaseConfigNotice() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        You can get these keys from your Firebase project settings. Copy the following into your <code>.env</code> file at the root of your project and fill in the values:
-                    </p>
-                    <pre className="p-4 bg-muted rounded-md text-xs overflow-x-auto">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <h4 className='font-semibold'>Where to find your Firebase keys:</h4>
+                        <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                            <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Firebase Console</a> and select your project.</li>
+                            <li>Click the gear icon <Settings className="inline-block h-4 w-4" /> next to "Project Overview" and select <strong>Project settings</strong>.</li>
+                            <li>In the "General" tab, scroll down to the "Your apps" section.</li>
+                            <li>Select your web app. If you don't have one, create it.</li>
+                            <li>Under "Firebase SDK snippet", select the <strong>Config</strong> option.</li>
+                            <li>You will see the configuration object with all the necessary keys.</li>
+                        </ol>
+                        <p className="text-muted-foreground mt-4">
+                            Copy the corresponding values into your <code>.env</code> file at the root of your project:
+                        </p>
+                        <pre className="p-4 bg-muted rounded-md text-xs overflow-x-auto not-prose">
 {`NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...`}
-                    </pre>
-                     <p className="text-sm text-muted-foreground mt-4">
-                        After updating your <code>.env</code> file, please restart the development server.
-                    </p>
+                        </pre>
+                        <p className="text-muted-foreground mt-4">
+                            After updating your <code>.env</code> file, you may need to restart the development server.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -86,13 +97,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   
   const signInWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase is not configured.");
-    await signInWithEmailAndPassword(auth, email, password);
+    if (!auth) throw new Error("Firebase not configured.");
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+        console.error("Error signing in with email", error);
+        throw new Error(error.code || 'An unknown error occurred');
+    }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase is not configured.");
-    await createUserWithEmailAndPassword(auth, email, password);
+    if (!auth) throw new Error("Firebase not configured.");
+    try {
+        await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+        console.error("Error signing up with email", error);
+        throw new Error(error.code || 'An unknown error occurred');
+    }
   };
 
   const signOut = async () => {
