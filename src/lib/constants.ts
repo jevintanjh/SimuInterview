@@ -1,5 +1,4 @@
 export const LOCAL_STORAGE_TRANSCRIPT_KEY = 'simu-interview-transcript';
-export const MAX_FREE_TRIES = 3;
 
 export const INTERVIEW_QUESTIONS: Record<string, string[]> = {
     en: [
