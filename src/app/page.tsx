@@ -2,7 +2,7 @@
 
 import { ScenarioForm } from '@/components/scenario-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Logo } from '@/components/logo';
 
 export default function Home() {
 
@@ -11,7 +11,7 @@ export default function Home() {
             <div className="w-full max-w-2xl mx-auto">
                 <header className="flex justify-center items-center mb-8 w-full">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="h-8 w-8 text-primary" />
+                        <Logo className="h-8 w-8 text-primary" />
                         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl font-headline">
                             SimuInterview
                         </h1>

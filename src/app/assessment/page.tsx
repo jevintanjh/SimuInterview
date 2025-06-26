@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { InterviewData, CompetencyAssessment } from '@/lib/types';
 import { ChevronLeft, ClipboardList, Loader2, Star, XCircle } from 'lucide-react';
+import { Logo } from '@/components/logo';
 
 function AssessmentReport({ assessments }: { assessments: ({ interviewQuestion: string } & CompetencyAssessment)[] }) {
     if (!assessments.length) return null;
@@ -124,15 +125,17 @@ function AssessmentPageComponent() {
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen">
       <header className="flex items-center justify-between mb-8">
-         <Button variant="outline" size="sm" onClick={() => router.push('/')}>
+        <div className="flex items-center gap-3">
+            <Logo className="h-7 w-7 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold font-headline">Interview Assessment</h1>
+              {interviewData && <p className="text-muted-foreground hidden md:block">For {interviewData.scenario.role} at {interviewData.scenario.company}</p>}
+            </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => router.push('/')}>
           <ChevronLeft className="h-4 w-4 mr-2" />
           Start New Interview
         </Button>
-        <div className="text-center">
-            <h1 className="text-3xl font-bold font-headline">Interview Assessment</h1>
-            {interviewData && <p className="text-muted-foreground">{interviewData.scenario.role} at {interviewData.scenario.company}</p>}
-        </div>
-        <div />
       </header>
 
       <main className="max-w-4xl mx-auto">

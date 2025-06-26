@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ROLE_BASED_INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { QAPair } from '@/lib/types';
 import { Bot, ChevronLeft, ChevronRight, Lightbulb, Loader2, Mic, Send, Square, Text, User } from 'lucide-react';
+import { Logo } from '@/components/logo';
 
 function InterviewPageComponent() {
   const router = useRouter();
@@ -268,18 +269,23 @@ function InterviewPageComponent() {
   return (
     <div className="container mx-auto p-4 min-h-screen flex flex-col gap-4">
       <header className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={() => router.push('/')} disabled={isProcessing}>
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          New Interview
-        </Button>
-        <div className="text-center">
+        <div className="flex items-center gap-3">
+          <Logo className="h-7 w-7 text-primary" />
+          <div>
             <h1 className="text-2xl font-bold font-headline">SimuInterview</h1>
-            <p className="text-sm text-muted-foreground">{scenario.role} at {scenario.company}</p>
+            <p className="text-sm text-muted-foreground hidden md:block">{scenario.role} at {scenario.company}</p>
+          </div>
         </div>
-        <Button onClick={handleFinishInterview} disabled={isProcessing}>
-          {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Finish & Assess
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.push('/')} disabled={isProcessing}>
+              <ChevronLeft className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">New Interview</span>
+            </Button>
+            <Button onClick={handleFinishInterview} disabled={isProcessing}>
+              {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Finish & Assess
+            </Button>
+        </div>
       </header>
       <main className="grid md:grid-cols-3 gap-4 flex-1">
         <aside className="md:col-span-1 space-y-4 flex flex-col">
