@@ -13,7 +13,7 @@ export default function Home() {
                     <div className="flex items-center gap-2">
                         <Logo className="h-8 w-8 text-primary" />
                         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl font-headline">
-                            SimuInterview
+                            Ace8
                         </h1>
                     </div>
                 </header>
