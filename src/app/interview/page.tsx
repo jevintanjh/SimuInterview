@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
+import { ROLE_BASED_INTERVIEW_QUESTIONS, LOCAL_STORAGE_TRANSCRIPT_KEY } from '@/lib/constants';
 import type { QAPair } from '@/lib/types';
 import { Bot, ChevronLeft, ChevronRight, Lightbulb, Loader2, Mic, Send, Square, Text, User } from 'lucide-react';
 
@@ -109,7 +109,10 @@ function InterviewPageComponent() {
 
   const handleNextQuestion = useCallback(() => {
     const language = scenario.language || 'en';
-    const questions = INTERVIEW_QUESTIONS[language as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.en;
+    const role = scenario.role || 'General';
+    
+    const languageQuestions = ROLE_BASED_INTERVIEW_QUESTIONS[language] || ROLE_BASED_INTERVIEW_QUESTIONS.en;
+    const questions = languageQuestions[role] || languageQuestions.General;
 
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
@@ -143,7 +146,10 @@ function InterviewPageComponent() {
     setInputMode((newScenario.mode as 'voice' | 'text') || 'voice');
     
     const language = newScenario.language || 'en';
-    const questions = INTERVIEW_QUESTIONS[language as keyof typeof INTERVIEW_QUESTIONS] || INTERVIEW_QUESTIONS.en;
+    const role = newScenario.role || 'General';
+
+    const languageQuestions = ROLE_BASED_INTERVIEW_QUESTIONS[language] || ROLE_BASED_INTERVIEW_QUESTIONS.en;
+    const questions = languageQuestions[role] || languageQuestions.General;
     const firstQuestion = questions[0];
 
     setTranscript([{ speaker: 'interviewer', text: firstQuestion }]);

@@ -38,7 +38,18 @@ export function ScenarioForm() {
           <Label htmlFor="role">Your Target Role</Label>
           <div className="relative">
             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="role" name="role" placeholder="e.g., Software Engineer" required className="pl-9" />
+            <Select name="role" defaultValue="General" required>
+                <SelectTrigger className="pl-9">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">General</SelectItem>
+                  <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                  <SelectItem value="Product Manager">Product Manager</SelectItem>
+                  <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                  <SelectItem value="Sales Representative">Sales Representative</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="space-y-2">
@@ -119,6 +130,10 @@ export function ScenarioForm() {
                   <SelectItem value="ja">Japanese</SelectItem>
                   <SelectItem value="ko">Korean</SelectItem>
                   <SelectItem value="zh">Mandarin</SelectItem>
+                  <SelectItem value="th">Thai</SelectItem>
+                  <SelectItem value="ms">Malay</SelectItem>
+                  <SelectItem value="id">Indonesian</SelectItem>
+                  <SelectItem value="vi">Vietnamese</SelectItem>
                 </SelectContent>
             </Select>
           </div>
