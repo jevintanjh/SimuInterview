@@ -18,7 +18,7 @@ export default function Home() {
                     </div>
                 </header>
                 <p className="text-lg text-muted-foreground text-center mb-8">
-                    Practice interviews with an AI-powered simulator.
+                    Practice interviews with an AI-powered simulator and ace it!
                 </p>
                 <Card className="shadow-lg w-full">
                     <CardHeader>
