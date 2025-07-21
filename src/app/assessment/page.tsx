@@ -93,24 +93,31 @@ function AssessmentPageComponent() {
     if (interviewData) {
       const generateAssessments = async () => {
         setIsLoading(true);
-        const assessmentPromises = interviewData.transcript.map(qa =>
-          analyzeInterviewResponse({
+        const assessmentPromises = interviewData.transcript.map(qa => {
+          // Validate that qa has required properties
+          if (!qa || !qa.question || !qa.answer) {
+            console.error("Invalid QA pair:", qa);
+            return Promise.resolve(null);
+          }
+          
+          return analyzeInterviewResponse({
             interviewQuestion: qa.question,
             userResponse: qa.answer,
-            role: interviewData.scenario.role,
-            industry: interviewData.scenario.industry,
+            role: interviewData.scenario.role || 'General',
+            industry: interviewData.scenario.industry || 'General',
             language: interviewData.scenario.language || 'en',
           }).then(res => ({ ...res, interviewQuestion: qa.question }))
           .catch(err => {
             console.error("Failed to analyze a response:", err);
+            const questionPreview = qa.question ? qa.question.substring(0, 30) : 'Unknown question';
             toast({
               title: "Analysis Error",
-              description: `Could not analyze the answer for: "${qa.question.substring(0, 30)}..."`,
+              description: `Could not analyze the answer for: "${questionPreview}..."`,
               variant: "destructive"
             });
             return null;
-          })
-        );
+          });
+        });
 
         const results = await Promise.all(assessmentPromises);
         const validResults = results.filter((r): r is { interviewQuestion: string } & CompetencyAssessment => r !== null);
