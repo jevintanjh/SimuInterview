@@ -70,9 +70,9 @@ function InterviewPageComponent() {
     setIsGeneratingAudio(true);
     setInterviewerAudioUrl(null);
     try {
-      const { audioDataUri } = await textToSpeech(text);
-      if (audioDataUri) {
-        setInterviewerAudioUrl(audioDataUri);
+      const response = await textToSpeech(text);
+      if (response && response.audioDataUri) {
+        setInterviewerAudioUrl(response.audioDataUri);
       } else {
         toast({
           title: 'Audio Generation Unavailable',
