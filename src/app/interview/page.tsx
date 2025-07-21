@@ -280,7 +280,7 @@ function InterviewPageComponent() {
         <div className="flex items-center gap-3">
           <Logo className="h-7 w-7 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold font-headline">Ace8</h1>
+            <h1 className="text-2xl font-bold font-headline">SimuInterviewer</h1>
             <p className="text-sm text-muted-foreground hidden md:block">{scenario.role} at {scenario.company}</p>
           </div>
         </div>
