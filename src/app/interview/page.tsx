@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -30,7 +29,7 @@ function InterviewPageComponent() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
-  
+
   const [interviewerAudioUrl, setInterviewerAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingResponse, setIsProcessingResponse] = useState(false);
@@ -45,7 +44,7 @@ function InterviewPageComponent() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
-  
+
   const isProcessing = isProcessingResponse || isGeneratingAudio || isFinishing;
 
   // Permission check
@@ -88,7 +87,7 @@ function InterviewPageComponent() {
       setIsGeneratingAudio(false);
     }
   }, [toast]);
-  
+
   const handleFinishInterview = useCallback(() => {
     if (isFinishing) return;
     setIsFinishing(true);
@@ -111,7 +110,7 @@ function InterviewPageComponent() {
   const handleNextQuestion = useCallback(() => {
     const language = scenario.language || 'en';
     const role = scenario.role || 'General';
-    
+
     const languageQuestions = ROLE_BASED_INTERVIEW_QUESTIONS[language] || ROLE_BASED_INTERVIEW_QUESTIONS.en;
     const questions = languageQuestions[role] || languageQuestions.General;
 
@@ -128,7 +127,7 @@ function InterviewPageComponent() {
       handleFinishInterview();
     }
   }, [currentQuestionIndex, getInterviewerAudio, scenario, handleFinishInterview]);
-  
+
   // Initial setup
   useEffect(() => {
     if (!isMounted) return;
@@ -142,10 +141,10 @@ function InterviewPageComponent() {
       router.replace('/');
       return;
     }
-    
+
     setScenario(newScenario);
     setInputMode((newScenario.mode as 'voice' | 'text') || 'voice');
-    
+
     const language = newScenario.language || 'en';
     const role = newScenario.role || 'General';
 
@@ -186,7 +185,7 @@ function InterviewPageComponent() {
         }
 
         setTranscript(prev => [...prev, { speaker: 'user', text: response }]);
-        
+
         const currentQaPair = qaPairs[currentQuestionIndex];
         const updatedQaPairs = [...qaPairs];
         updatedQaPairs[currentQuestionIndex] = { ...currentQaPair, answer: response };
@@ -194,7 +193,7 @@ function InterviewPageComponent() {
 
         const feedbackResult = await provideRealTimeFeedback({
             intervieweeResponse: response,
-            interviewerQuestion: currentQaPair.question,
+            interviewerQuestion: currentQaPair?.question || '',
             jobDescription: `Role: ${scenario.role}, Company: ${scenario.company}, Industry: ${scenario.industry}`,
             interviewerPersona: scenario.persona,
             language: scenario.language || 'en',
@@ -262,8 +261,17 @@ function InterviewPageComponent() {
     }
   }, [interviewerAudioUrl]);
 
-  if (!isMounted) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  const currentQaPair = qaPairs[currentQuestionIndex];
+
+  if (!isMounted || !currentQaPair) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading interview...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
