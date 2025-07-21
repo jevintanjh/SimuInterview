@@ -18,13 +18,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    allowedDevOrigins: [
-      'http://localhost:9002',
-      'http://172.31.128.34:9002',
-      '2f68414d-00cd-4213-aa14-b8283a4ae13b-00-3qpreagyovnug.sisko.replit.dev'
-    ],
-  },
 };
 
 export default nextConfig;
